@@ -9,15 +9,15 @@ import java.util.LinkedHashSet;
 
 public class AnotherCompoundChecker extends BaseTypeChecker {
     @Override
-    protected LinkedHashSet<Class<? extends BaseTypeChecker>> getImmediateSubcheckerClasses() {
+    protected LinkedHashSet<BaseTypeChecker> getImmediateSubcheckers() {
         // Make sure that options can be accessed by sub-checkers to determine
         // which subcheckers to run.
         @SuppressWarnings("unused")
         String option = super.getOption("nomsgtext");
-        LinkedHashSet<Class<? extends BaseTypeChecker>> subcheckers = new LinkedHashSet<>();
-        subcheckers.addAll(super.getImmediateSubcheckerClasses());
-        subcheckers.add(AliasingChecker.class);
-        subcheckers.add(ValueChecker.class);
+        LinkedHashSet<BaseTypeChecker> subcheckers = new LinkedHashSet<>();
+        subcheckers.addAll(super.getImmediateSubcheckers());
+        subcheckers.add(new AliasingChecker());
+        subcheckers.add(new ValueChecker());
         return subcheckers;
     }
 

@@ -94,6 +94,24 @@ import javax.tools.Diagnostic;
  */
 public abstract class BaseTypeChecker extends SourceChecker {
 
+    /*
+     * For most checkers, their instanced need not be distinguished since the checker only runs
+     * once, and there are never two checkers of the same class.
+     *
+     * If this is not the case for your checker class, you should override hashCode and equals
+     * to uniquely identify each checker.
+     */
+
+    @Override
+    public int hashCode() {
+        return getClass().hashCode();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        return obj.getClass() == getClass();
+    }
+
     @Override
     public void initChecker() {
         // initialize all checkers and share options as necessary
@@ -170,8 +188,8 @@ public abstract class BaseTypeChecker extends SourceChecker {
     }
 
     /**
-     * Returns the set of subchecker classes on which this checker depends. Returns an empty set if
-     * this checker does not depend on any others.
+     * Returns the set of immediate subcheckers on which this checker depends. Returns an empty set
+     * if this checker does not depend on any others.
      *
      * <p>Subclasses should override this method to specify subcheckers. If they do so, they should
      * call the super implementation of this method and add dependencies to the returned set so that
@@ -200,9 +218,9 @@ public abstract class BaseTypeChecker extends SourceChecker {
      *
      * @return the subchecker classes on which this checker depends
      */
-    protected LinkedHashSet<Class<? extends BaseTypeChecker>> getImmediateSubcheckerClasses() {
+    protected LinkedHashSet<BaseTypeChecker> getImmediateSubcheckers() {
         if (shouldResolveReflection()) {
-            return new LinkedHashSet<>(Collections.singleton(MethodValChecker.class));
+            return new LinkedHashSet<>(Collections.singleton(new MethodValChecker()));
         }
         // The returned set will be modified by callees.
         return new LinkedHashSet<>();
@@ -387,12 +405,12 @@ public abstract class BaseTypeChecker extends SourceChecker {
     }
 
     /**
-     * Returns the requested subchecker. A checker of a given class can only be run once, so this
-     * returns the only such checker, or null if none was found. The caller must know the exact
-     * checker class to request.
+     * Returns the first subchecker of the given class, or null if none was found. The caller must
+     * know the exact checker class to request.
      *
      * @param checkerClass the class of the subchecker
-     * @return the requested subchecker or null if not found
+     * @return the first subchecker of the given class or null if not found
+     * @see #getSubcheckers(Class)
      */
     @SuppressWarnings("unchecked")
     public <T extends BaseTypeChecker> T getSubchecker(Class<T> checkerClass) {
@@ -406,6 +424,27 @@ public abstract class BaseTypeChecker extends SourceChecker {
     }
 
     /**
+     * Returns all subcheckers of the given class, or an empty list if none was found. The caller
+     * must know the exact checker class to request.
+     *
+     * @param checkerClass the class of the subchecker
+     * @return all subcheckers of the given class or an empty list if not found
+     * @see #getSubchecker(Class)
+     */
+    @SuppressWarnings("unchecked")
+    public <T extends BaseTypeChecker> List<T> getSubcheckers(Class<T> checkerClass) {
+        ArrayList<T> result = new ArrayList<>();
+
+        for (BaseTypeChecker checker : immediateSubcheckers) {
+            if (checker.getClass() == checkerClass) {
+                result.add((T) checker);
+            }
+        }
+
+        return result;
+    }
+
+    /**
      * Returns the type factory used by a subchecker. Returns null if no matching subchecker was
      * found or if the type factory is null. The caller must know the exact checker class to
      * request.
@@ -416,6 +455,7 @@ public abstract class BaseTypeChecker extends SourceChecker {
      * @param subCheckerClass the class of the subchecker
      * @param <T> the type of {@code subCheckerClass}'s {@link AnnotatedTypeFactory}
      * @return the type factory of the requested subchecker or null if not found
+     * @see #getTypeFactoriesOfSubcheckers(Class)
      */
     @SuppressWarnings("TypeParameterUnusedInFormals") // Intentional abuse
     public <T extends GenericAnnotatedTypeFactory<?, ?, ?, ?>>
@@ -423,55 +463,68 @@ public abstract class BaseTypeChecker extends SourceChecker {
         return getTypeFactory().getTypeFactoryOfSubchecker(subCheckerClass);
     }
 
+    /**
+     * Returns all type factories used by a subchecker of the given class. Returns an empty list if
+     * no matching subchecker was found. The caller must know the exact checker class to request.
+     *
+     * @param checkerClass the class of the subcheckers
+     * @return the type factories of the requested subchecker, or an empty list if not found.
+     * @see #getTypeFactoryOfSubchecker(Class)
+     */
+    @SuppressWarnings({"unchecked", "TypeParameterUnusedInFormals"}) // Intentional abuse
+    public <T extends GenericAnnotatedTypeFactory<?, ?, ?, ?>, U extends BaseTypeChecker>
+            List<T> getTypeFactoriesOfSubcheckers(Class<U> checkerClass) {
+        List<U> checkers = getSubcheckers(checkerClass);
+        List<T> result = new ArrayList<>();
+
+        for (BaseTypeChecker checker : checkers) {
+            result.add((T) checker.getTypeFactory());
+        }
+
+        return result;
+    }
+
     /*
      * Performs a depth first search for all checkers this checker depends on.
      * The depth first search ensures that the collection has the correct order the checkers need to be run in.
      *
-     * Modifies the alreadyInitializedSubcheckerMap map by adding all recursively newly instantiated subcheckers' class objects and instances.
+     * Modifies the alreadyInitializedSubcheckerMap map by adding all recursively newly instantiated subcheckers.
+     * alreadyInitializedSubcheckerMap is an equivalence map, mapping a checker to another, already initialized,
+     * checker with the same hash code.
      * A LinkedHashMap is used because, unlike HashMap, it preserves the order in which entries were inserted.
      *
      * Returns the unmodifiable list of immediate subcheckers of this checker.
      */
     private List<BaseTypeChecker> instantiateSubcheckers(
-            LinkedHashMap<Class<? extends BaseTypeChecker>, BaseTypeChecker>
-                    alreadyInitializedSubcheckerMap) {
-        LinkedHashSet<Class<? extends BaseTypeChecker>> classesOfImmediateSubcheckers =
-                getImmediateSubcheckerClasses();
-        if (classesOfImmediateSubcheckers.isEmpty()) {
+            LinkedHashMap<BaseTypeChecker, BaseTypeChecker> alreadyInitializedSubcheckerMap) {
+        LinkedHashSet<BaseTypeChecker> immediateSubcheckers = getImmediateSubcheckers();
+        if (immediateSubcheckers.isEmpty()) {
             return Collections.emptyList();
         }
 
-        ArrayList<BaseTypeChecker> immediateSubcheckers =
-                new ArrayList<>(classesOfImmediateSubcheckers.size());
+        List<BaseTypeChecker> result = new ArrayList<>(immediateSubcheckers.size());
 
-        for (Class<? extends BaseTypeChecker> subcheckerClass : classesOfImmediateSubcheckers) {
-            BaseTypeChecker subchecker = alreadyInitializedSubcheckerMap.get(subcheckerClass);
-            if (subchecker != null) {
+        for (BaseTypeChecker subchecker : immediateSubcheckers) {
+            BaseTypeChecker initializedSubchecker = alreadyInitializedSubcheckerMap.get(subchecker);
+            if (initializedSubchecker != null) {
                 // Add the already initialized subchecker to the list of immediate subcheckers so
                 // that this checker can refer to it.
-                immediateSubcheckers.add(subchecker);
+                result.add(initializedSubchecker);
                 continue;
             }
 
-            BaseTypeChecker instance;
-            try {
-                instance = subcheckerClass.getDeclaredConstructor().newInstance();
-            } catch (Exception e) {
-                throw new BugInCF("Could not create an instance of " + subcheckerClass);
-            }
-
-            instance.setProcessingEnvironment(this.processingEnv);
-            instance.treePathCacher = this.getTreePathCacher();
+            subchecker.setProcessingEnvironment(this.processingEnv);
+            subchecker.treePathCacher = this.getTreePathCacher();
             // Prevent the new checker from storing non-immediate subcheckers
-            instance.subcheckers = Collections.emptyList();
-            immediateSubcheckers.add(instance);
-            instance.immediateSubcheckers =
-                    instance.instantiateSubcheckers(alreadyInitializedSubcheckerMap);
-            instance.setParentChecker(this);
-            alreadyInitializedSubcheckerMap.put(subcheckerClass, instance);
+            subchecker.subcheckers = Collections.emptyList();
+            result.add(subchecker);
+            subchecker.immediateSubcheckers =
+                    subchecker.instantiateSubcheckers(alreadyInitializedSubcheckerMap);
+            subchecker.setParentChecker(this);
+            alreadyInitializedSubcheckerMap.put(subchecker, subchecker);
         }
 
-        return Collections.unmodifiableList(immediateSubcheckers);
+        return Collections.unmodifiableList(result);
     }
 
     /**
@@ -485,8 +538,7 @@ public abstract class BaseTypeChecker extends SourceChecker {
     public List<BaseTypeChecker> getSubcheckers() {
         if (subcheckers == null) {
             // Instantiate the checkers this one depends on, if any.
-            LinkedHashMap<Class<? extends BaseTypeChecker>, BaseTypeChecker> checkerMap =
-                    new LinkedHashMap<>(1);
+            LinkedHashMap<BaseTypeChecker, BaseTypeChecker> checkerMap = new LinkedHashMap<>(1);
 
             immediateSubcheckers = instantiateSubcheckers(checkerMap);
 

@@ -72,11 +72,10 @@ public class NullnessChecker extends InitializationChecker {
     public static final boolean LINT_DEFAULT_PERMITCLEARPROPERTY = false;
 
     @Override
-    protected LinkedHashSet<Class<? extends BaseTypeChecker>> getImmediateSubcheckerClasses() {
-        LinkedHashSet<Class<? extends BaseTypeChecker>> checkers =
-                super.getImmediateSubcheckerClasses();
+    protected LinkedHashSet<BaseTypeChecker> getImmediateSubcheckers() {
+        LinkedHashSet<BaseTypeChecker> checkers = super.getImmediateSubcheckers();
         if (!hasOptionNoSubcheckers("assumeKeyFor")) {
-            checkers.add(KeyForSubchecker.class);
+            checkers.add(new KeyForSubchecker());
         }
         return checkers;
     }

@@ -102,15 +102,14 @@ public class UpperBoundChecker extends BaseTypeChecker {
     }
 
     @Override
-    protected LinkedHashSet<Class<? extends BaseTypeChecker>> getImmediateSubcheckerClasses() {
-        LinkedHashSet<Class<? extends BaseTypeChecker>> checkers =
-                super.getImmediateSubcheckerClasses();
-        checkers.add(SubstringIndexChecker.class);
-        checkers.add(SearchIndexChecker.class);
-        checkers.add(SameLenChecker.class);
-        checkers.add(LowerBoundChecker.class);
-        checkers.add(ValueChecker.class);
-        checkers.add(LessThanChecker.class);
+    protected LinkedHashSet<BaseTypeChecker> getImmediateSubcheckers() {
+        LinkedHashSet<BaseTypeChecker> checkers = super.getImmediateSubcheckers();
+        checkers.add(new SubstringIndexChecker());
+        checkers.add(new SearchIndexChecker());
+        checkers.add(new SameLenChecker());
+        checkers.add(new LowerBoundChecker());
+        checkers.add(new ValueChecker());
+        checkers.add(new LessThanChecker());
         return checkers;
     }
 }

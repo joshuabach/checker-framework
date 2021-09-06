@@ -59,12 +59,11 @@ public class LowerBoundChecker extends BaseTypeChecker {
     }
 
     @Override
-    protected LinkedHashSet<Class<? extends BaseTypeChecker>> getImmediateSubcheckerClasses() {
-        LinkedHashSet<Class<? extends BaseTypeChecker>> checkers =
-                super.getImmediateSubcheckerClasses();
-        checkers.add(ValueChecker.class);
-        checkers.add(LessThanChecker.class);
-        checkers.add(SearchIndexChecker.class);
+    protected LinkedHashSet<BaseTypeChecker> getImmediateSubcheckers() {
+        LinkedHashSet<BaseTypeChecker> checkers = super.getImmediateSubcheckers();
+        checkers.add(new ValueChecker());
+        checkers.add(new LessThanChecker());
+        checkers.add(new SearchIndexChecker());
         return checkers;
     }
 }

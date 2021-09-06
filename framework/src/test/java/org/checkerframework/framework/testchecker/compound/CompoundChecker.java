@@ -13,11 +13,11 @@ import java.util.LinkedHashSet;
  */
 public class CompoundChecker extends BaseTypeChecker {
     @Override
-    protected LinkedHashSet<Class<? extends BaseTypeChecker>> getImmediateSubcheckerClasses() {
-        LinkedHashSet<Class<? extends BaseTypeChecker>> subcheckers = new LinkedHashSet<>();
-        subcheckers.addAll(super.getImmediateSubcheckerClasses());
-        subcheckers.add(AliasingChecker.class);
-        subcheckers.add(AnotherCompoundChecker.class);
+    protected LinkedHashSet<BaseTypeChecker> getImmediateSubcheckers() {
+        LinkedHashSet<BaseTypeChecker> subcheckers = new LinkedHashSet<>();
+        subcheckers.addAll(super.getImmediateSubcheckers());
+        subcheckers.add(new AliasingChecker());
+        subcheckers.add(new AnotherCompoundChecker());
         return subcheckers;
     }
 

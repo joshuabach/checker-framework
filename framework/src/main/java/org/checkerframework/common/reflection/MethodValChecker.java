@@ -18,12 +18,12 @@ public class MethodValChecker extends BaseTypeChecker {
     }
 
     @Override
-    protected LinkedHashSet<Class<? extends BaseTypeChecker>> getImmediateSubcheckerClasses() {
+    protected LinkedHashSet<BaseTypeChecker> getImmediateSubcheckers() {
         // Don't call super otherwise MethodVal will be added as a subChecker
         // which creates a circular dependency.
-        LinkedHashSet<Class<? extends BaseTypeChecker>> subCheckers = new LinkedHashSet<>();
-        subCheckers.add(ValueChecker.class);
-        subCheckers.add(ClassValChecker.class);
+        LinkedHashSet<BaseTypeChecker> subCheckers = new LinkedHashSet<>();
+        subCheckers.add(new ValueChecker());
+        subCheckers.add(new ClassValChecker());
         return subCheckers;
     }
 }

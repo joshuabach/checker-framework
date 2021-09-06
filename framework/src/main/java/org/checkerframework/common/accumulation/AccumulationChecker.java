@@ -34,11 +34,10 @@ public abstract class AccumulationChecker extends BaseTypeChecker {
     }
 
     @Override
-    protected LinkedHashSet<Class<? extends BaseTypeChecker>> getImmediateSubcheckerClasses() {
-        LinkedHashSet<Class<? extends BaseTypeChecker>> checkers =
-                super.getImmediateSubcheckerClasses();
+    protected LinkedHashSet<BaseTypeChecker> getImmediateSubcheckers() {
+        LinkedHashSet<BaseTypeChecker> checkers = super.getImmediateSubcheckers();
         if (isEnabled(AliasAnalysis.RETURNS_RECEIVER)) {
-            checkers.add(ReturnsReceiverChecker.class);
+            checkers.add(new ReturnsReceiverChecker());
         }
         return checkers;
     }
