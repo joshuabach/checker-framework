@@ -178,12 +178,12 @@ public class InitializationTransfer<
         assert !result.containsTwoStores();
         S store = result.getRegularStore();
         if (store.isFieldInitialized(n.getElement()) && n.getReceiver() instanceof ThisNode) {
-            AnnotatedTypeMirror fieldAnno =
-                    analysis.getTypeFactory().getAnnotatedType(n.getElement());
+            VariableElement field = n.getElement();
+            AnnotatedTypeMirror fieldAnno = analysis.getTypeFactory().getAnnotatedType(field);
+            AnnotationMirror inv = atypeFactory.getFieldInvariantAnnotation(fieldAnno, field);
             // Only if the field has the type system's invariant annotation,
             // such as @NonNull.
-            if (fieldAnno.hasAnnotation(atypeFactory.getFieldInvariantAnnotation())) {
-                AnnotationMirror inv = atypeFactory.getFieldInvariantAnnotation();
+            if (inv != null) {
                 V oldResultValue = result.getResultValue();
                 V refinedResultValue =
                         analysis.createSingleAnnotationValue(

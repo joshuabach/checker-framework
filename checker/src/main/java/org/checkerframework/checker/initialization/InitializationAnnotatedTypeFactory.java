@@ -188,12 +188,26 @@ public abstract class InitializationAnnotatedTypeFactory<
     }
 
     /**
-     * Returns the annotation that makes up the invariant of this commitment type system, such as
-     * {@code @NonNull}.
+     * Returns the annotation on {@code type} that makes up an invariant in this commitment type
+     * system, such as {@code @NonNull}, or {@code null} if {@code type} contains no invariant.
      *
-     * @return the invariant annotation for this type system
+     * @param type of field that might have invariant annotation
+     * @param fieldElement the field element, which can be used to check annotations on the
+     *     declaration
+     * @return the invariant annotation for this type system, or {@code null}
      */
-    public abstract AnnotationMirror getFieldInvariantAnnotation();
+    public abstract AnnotationMirror getFieldInvariantAnnotation(
+            AnnotatedTypeMirror type, VariableElement fieldElement);
+
+    /**
+     * Returns {@code true} if and only if {@code anno} makes up an invariant in this commitment
+     * type system.
+     *
+     * @param anno an annotation
+     * @return {@code true} if and only if {@code anno} makes up an invariant in this commitment
+     *     type system.
+     */
+    public abstract boolean isFieldInvariantAnnotation(AnnotationMirror anno);
 
     /**
      * Returns whether or not {@code field} has the invariant annotation.
@@ -717,10 +731,6 @@ public abstract class InitializationAnnotatedTypeFactory<
             AnnotatedTypeMirror receiverType,
             AnnotatedTypeMirror fieldAnnotations,
             Element element) {
-        // not necessary for primitive fields
-        if (TypesUtils.isPrimitive(type.getUnderlyingType())) {
-            return;
-        }
         // not necessary if there is an explicit UnknownInitialization
         // annotation on the field
         if (AnnotationUtils.containsSameByName(

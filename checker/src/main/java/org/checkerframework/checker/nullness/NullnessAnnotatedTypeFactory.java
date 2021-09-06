@@ -60,7 +60,6 @@ import org.checkerframework.javacutil.TypesUtils;
 
 import java.lang.annotation.Annotation;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -718,8 +717,18 @@ public class NullnessAnnotatedTypeFactory
     }
 
     @Override
-    public AnnotationMirror getFieldInvariantAnnotation() {
-        return NONNULL;
+    public AnnotationMirror getFieldInvariantAnnotation(
+            AnnotatedTypeMirror type, VariableElement fieldElement) {
+        if (type.hasAnnotation(NONNULL)) {
+            return NONNULL;
+        } else {
+            return null;
+        }
+    }
+
+    @Override
+    public boolean isFieldInvariantAnnotation(AnnotationMirror anno) {
+        return getQualifierHierarchy().isSubtype(anno, NONNULL);
     }
 
     /**
@@ -733,10 +742,19 @@ public class NullnessAnnotatedTypeFactory
     @Override
     protected boolean hasFieldInvariantAnnotation(
             AnnotatedTypeMirror type, VariableElement fieldElement) {
-        AnnotationMirror invariant = getFieldInvariantAnnotation();
+        AnnotationMirror invariant = NONNULL;
         Set<AnnotationMirror> lowerBounds =
                 AnnotatedTypes.findEffectiveLowerBoundAnnotations(qualHierarchy, type);
         return AnnotationUtils.containsSame(lowerBounds, invariant);
+    }
+
+    @Override
+    public void postAsMemberOf(
+            AnnotatedTypeMirror type, AnnotatedTypeMirror owner, Element element) {
+        // not necessary for primitive fields
+        if (!TypesUtils.isPrimitive(type.getUnderlyingType())) {
+            super.postAsMemberOf(type, owner, element);
+        }
     }
 
     @Override

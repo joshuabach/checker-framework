@@ -44,6 +44,7 @@ import java.util.StringJoiner;
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.ExecutableElement;
+import javax.lang.model.element.VariableElement;
 
 /* NO-AFU
    import org.checkerframework.common.wholeprograminference.WholeProgramInference;
@@ -174,13 +175,19 @@ public class InitializationVisitor<
             AnnotationMirror necessaryAnnotation,
             AnnotationMirror inferredAnnotation,
             CFAbstractStore<?, ?> store) {
-        // also use the information about initialized fields to check contracts
-        final AnnotationMirror invariantAnno = atypeFactory.getFieldInvariantAnnotation();
-
-        if (!atypeFactory.getQualifierHierarchy().isSubtype(invariantAnno, necessaryAnnotation)
-                || !(expr instanceof FieldAccess)) {
+        if (!(expr instanceof FieldAccess)) {
             return super.checkContract(expr, necessaryAnnotation, inferredAnnotation, store);
+        } else {
+            FieldAccess fa = (FieldAccess) expr;
+            VariableElement field = fa.getField();
+            AnnotatedTypeMirror type = atypeFactory.getAnnotatedType(field);
+            AnnotationMirror inv = atypeFactory.getFieldInvariantAnnotation(type, field);
+            if (inv == null
+                    || !atypeFactory.getQualifierHierarchy().isSubtype(inv, necessaryAnnotation)) {
+                return super.checkContract(expr, necessaryAnnotation, inferredAnnotation, store);
+            }
         }
+
         if (expr.containsUnknown()) {
             return false;
         }
@@ -190,11 +197,11 @@ public class InitializationVisitor<
             @SuppressWarnings("unchecked")
             Store s = (Store) store;
             if (s.isFieldInitialized(fa.getField())) {
-                AnnotatedTypeMirror fieldType = atypeFactory.getAnnotatedType(fa.getField());
+                VariableElement field = fa.getField();
+                AnnotatedTypeMirror fieldType = atypeFactory.getAnnotatedType(field);
+                AnnotationMirror inv = atypeFactory.getFieldInvariantAnnotation(fieldType, field);
                 // is this an invariant-field?
-                if (AnnotationUtils.containsSame(fieldType.getAnnotations(), invariantAnno)) {
-                    return true;
-                }
+                return inv != null;
             }
         } else {
             @SuppressWarnings("unchecked")
@@ -219,13 +226,12 @@ public class InitializationVisitor<
                 }
             }
 
-            AnnotatedTypeMirror fieldType = atypeFactory.getAnnotatedType(fa.getField());
+            VariableElement field = fa.getField();
+            AnnotatedTypeMirror fieldType = atypeFactory.getAnnotatedType(field);
+            AnnotationMirror inv = atypeFactory.getFieldInvariantAnnotation(fieldType, field);
             // The receiver is fully initialized and the field type
             // has the invariant type.
-            if (isReceiverInitialized
-                    && AnnotationUtils.containsSame(fieldType.getAnnotations(), invariantAnno)) {
-                return true;
-            }
+            return isReceiverInitialized && inv != null;
         }
         return super.checkContract(expr, necessaryAnnotation, inferredAnnotation, store);
     }

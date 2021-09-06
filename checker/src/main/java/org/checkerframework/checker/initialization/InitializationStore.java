@@ -10,8 +10,7 @@ import org.checkerframework.framework.flow.CFAbstractAnalysis;
 import org.checkerframework.framework.flow.CFAbstractStore;
 import org.checkerframework.framework.flow.CFAbstractValue;
 import org.checkerframework.framework.type.AnnotatedTypeFactory;
-import org.checkerframework.framework.type.QualifierHierarchy;
-import org.checkerframework.javacutil.AnnotationUtils;
+import org.checkerframework.framework.type.AnnotatedTypeMirror;
 import org.plumelib.util.CollectionsPlume;
 import org.plumelib.util.ToStringComparator;
 
@@ -20,6 +19,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
@@ -65,20 +65,20 @@ public class InitializationStore<V extends CFAbstractValue<V>, S extends Initial
 
         InitializationAnnotatedTypeFactory<?, ?, ?, ?> atypeFactory =
                 (InitializationAnnotatedTypeFactory<?, ?, ?, ?>) analysis.getTypeFactory();
-        QualifierHierarchy qualifierHierarchy = atypeFactory.getQualifierHierarchy();
-        AnnotationMirror invariantAnno = atypeFactory.getFieldInvariantAnnotation();
 
-        // Remember fields that have the 'invariant' annotation in the store.
+        // Remember fields that have an invariant annotation in the store.
         if (je instanceof FieldAccess) {
             FieldAccess fieldAccess = (FieldAccess) je;
             if (!fieldValues.containsKey(je)) {
-                Set<AnnotationMirror> declaredAnnos =
-                        atypeFactory.getAnnotatedType(fieldAccess.getField()).getAnnotations();
-                if (AnnotationUtils.containsSame(declaredAnnos, invariantAnno)) {
+                VariableElement field = fieldAccess.getField();
+                AnnotatedTypeMirror type = atypeFactory.getAnnotatedType(field);
+                AnnotationMirror inv = atypeFactory.getFieldInvariantAnnotation(type, field);
+
+                if (inv != null) {
                     if (!invariantFields.containsKey(fieldAccess)) {
                         invariantFields.put(
                                 fieldAccess,
-                                analysis.createSingleAnnotationValue(invariantAnno, je.getType()));
+                                analysis.createSingleAnnotationValue(inv, je.getType()));
                     }
                 }
             }
@@ -87,7 +87,7 @@ public class InitializationStore<V extends CFAbstractValue<V>, S extends Initial
         super.insertValue(je, value, permitNondeterministic);
 
         for (AnnotationMirror a : value.getAnnotations()) {
-            if (qualifierHierarchy.isSubtype(a, invariantAnno)) {
+            if (atypeFactory.isFieldInvariantAnnotation(a)) {
                 if (je instanceof FieldAccess) {
                     FieldAccess fa = (FieldAccess) je;
                     if (fa.getReceiver() instanceof ThisReference
