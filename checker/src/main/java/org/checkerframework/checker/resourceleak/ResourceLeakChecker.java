@@ -45,14 +45,13 @@ public class ResourceLeakChecker extends CalledMethodsChecker {
     private int numMustCallFailed = 0;
 
     @Override
-    protected LinkedHashSet<Class<? extends BaseTypeChecker>> getImmediateSubcheckerClasses() {
-        LinkedHashSet<Class<? extends BaseTypeChecker>> checkers =
-                super.getImmediateSubcheckerClasses();
+    protected LinkedHashSet<BaseTypeChecker> getImmediateSubcheckers() {
+        LinkedHashSet<BaseTypeChecker> checkers = super.getImmediateSubcheckers();
 
         if (this.processingEnv.getOptions().containsKey(MustCallChecker.NO_CREATES_MUSTCALLFOR)) {
-            checkers.add(MustCallNoCreatesMustCallForChecker.class);
+            checkers.add(new MustCallNoCreatesMustCallForChecker());
         } else {
-            checkers.add(MustCallChecker.class);
+            checkers.add(new MustCallChecker());
         }
 
         return checkers;
