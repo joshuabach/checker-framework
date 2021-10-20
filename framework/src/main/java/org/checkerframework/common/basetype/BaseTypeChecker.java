@@ -484,16 +484,18 @@ public abstract class BaseTypeChecker extends SourceChecker {
         return result;
     }
 
-    /*
-     * Performs a depth first search for all checkers this checker depends on.
-     * The depth first search ensures that the collection has the correct order the checkers need to be run in.
+    /**
+     * Performs a depth first search for all checkers this checker depends on. The depth first
+     * search ensures that the collection has the correct order the checkers need to be run in.
      *
-     * Modifies the alreadyInitializedSubcheckerMap map by adding all recursively newly instantiated subcheckers.
-     * alreadyInitializedSubcheckerMap is an equivalence map, mapping a checker to another, already initialized,
-     * checker with the same hash code.
-     * A LinkedHashMap is used because, unlike HashMap, it preserves the order in which entries were inserted.
+     * <p>Modifies the alreadyInitializedSubcheckerMap map by adding all recursively newly
+     * instantiated subcheckers. alreadyInitializedSubcheckerMap is an equivalence map, mapping a
+     * checker to another, already initialized, checker with the same hash code. A LinkedHashMap is
+     * used because, unlike HashMap, it preserves the order in which entries were inserted.
      *
-     * Returns the unmodifiable list of immediate subcheckers of this checker.
+     * @param alreadyInitializedSubcheckerMap an equivalence map, mapping a checker to another,
+     *     already initialized, checker with the same hash code.
+     * @return the unmodifiable list of immediate subcheckers of this checker.
      */
     private List<BaseTypeChecker> instantiateSubcheckers(
             LinkedHashMap<BaseTypeChecker, BaseTypeChecker> alreadyInitializedSubcheckerMap) {
