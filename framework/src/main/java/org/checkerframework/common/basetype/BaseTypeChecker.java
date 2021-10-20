@@ -427,6 +427,7 @@ public abstract class BaseTypeChecker extends SourceChecker {
      * Returns all subcheckers of the given class, or an empty list if none was found. The caller
      * must know the exact checker class to request.
      *
+     * @param <T> the class of the subchecker
      * @param checkerClass the class of the subchecker
      * @return all subcheckers of the given class or an empty list if not found
      * @see #getSubchecker(Class)
@@ -467,6 +468,8 @@ public abstract class BaseTypeChecker extends SourceChecker {
      * Returns all type factories used by a subchecker of the given class. Returns an empty list if
      * no matching subchecker was found. The caller must know the exact checker class to request.
      *
+     * @param <T> the class of the type factories of the subcheckers
+     * @param <U> the class of the subcheckers
      * @param checkerClass the class of the subcheckers
      * @return the type factories of the requested subchecker, or an empty list if not found.
      * @see #getTypeFactoryOfSubchecker(Class)
