@@ -994,6 +994,13 @@ may itself be a compound checker, and multiple checkers may declare a
 dependence on the same subchecker.  The Checker Framework will run each
 checker once, and in an order consistent with all the dependences.
 
+It is possible to have multiple subcheckers of the same class type. This is useful
+if the same checker can be run multiple times on the same project with different
+configurations. In this case, the subchecker class should override
+\<hashCode> and \<equals> to uniquely identify every instance; the default
+implementation of these methods considers every checker instance of the
+same class type to be equal.
+
 A checker obtains information from its subcheckers (those that ran before
 it) by querying their \refclass{framework/type}{AnnotatedTypeFactory} to
 determine the types of variables.  Obtain the \<AnnotatedTypeFactory> by
