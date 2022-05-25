@@ -59,11 +59,7 @@ import org.checkerframework.javacutil.TypeSystemError;
 import org.checkerframework.javacutil.TypesUtils;
 
 import java.lang.annotation.Annotation;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import javax.lang.model.element.AnnotationMirror;
 import javax.lang.model.element.Element;
@@ -731,6 +727,15 @@ public class NullnessAnnotatedTypeFactory
         return getQualifierHierarchy().isSubtype(anno, NONNULL);
     }
 
+    @Override
+    public void postAsMemberOf(
+            AnnotatedTypeMirror type, AnnotatedTypeMirror owner, Element element) {
+        // not necessary for primitive fields
+        if (!TypesUtils.isPrimitive(type.getUnderlyingType())) {
+            super.postAsMemberOf(type, owner, element);
+        }
+    }
+
     /**
      * {@inheritDoc}
      *
@@ -749,16 +754,7 @@ public class NullnessAnnotatedTypeFactory
     }
 
     @Override
-    public void postAsMemberOf(
-            AnnotatedTypeMirror type, AnnotatedTypeMirror owner, Element element) {
-        // not necessary for primitive fields
-        if (!TypesUtils.isPrimitive(type.getUnderlyingType())) {
-            super.postAsMemberOf(type, owner, element);
-        }
-    }
-
-    @Override
-    public QualifierHierarchy createQualifierHierarchy() {
+    protected QualifierHierarchy createQualifierHierarchy() {
         return new NullnessQualifierHierarchy();
     }
 
